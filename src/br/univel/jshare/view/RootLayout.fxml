@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+
+
+<BorderPane maxHeight="500.0" maxWidth="750.0" minHeight="500.0" minWidth="750.0" prefHeight="500.0" prefWidth="750.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8.0.111">
+	<!-- TODO Add Nodes -->
+</BorderPane>
