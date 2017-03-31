@@ -41,6 +41,9 @@ public class ViewMainController {
 		disableButtons();
 	}
 	
+	/**
+	 * Method to dissable limpar,buscar,assunto e filtro
+	 */
 	@FXML
 	public void disableButtons(){
 		btnLimpar.setDisable(true);
@@ -49,6 +52,9 @@ public class ViewMainController {
 		filtro.setDisable(true);
 	}
 	
+	/**
+	 * Method to turn on/off server
+	 */
 	@FXML
 	public void handleServer(){
 		if(!serverStatus){
