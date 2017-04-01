@@ -2,8 +2,6 @@ package br.univel.jshare;
 
 import java.io.IOException;
 
-import javax.swing.text.View;
-
 import br.univel.jshare.view.ViewMainController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
