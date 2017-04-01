@@ -1,6 +1,15 @@
 package br.univel.jshare.view;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import br.univel.jshare.MainApp;
+import br.univel.jshare.comum.Arquivo;
+import br.univel.jshare.comum.Cliente;
 import br.univel.jshare.controller.ServerController;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -30,8 +39,11 @@ public class ViewMainController {
 	@FXML
 	private TextArea logServer;
 	
+	private Date date;
 	private boolean serverStatus = false;
+	private Map<Cliente, List<Arquivo>> mapaClientes = new HashMap<>();
 	private ServerController serverController = new ServerController();
+	private DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 	
 	public ViewMainController() {
 	}
@@ -57,15 +69,27 @@ public class ViewMainController {
 	 */
 	@FXML
 	public void handleServer(){
+		
+		date = new Date();
+		mapaClientes = serverController.getMapaClientes();
+		
 		if(!serverStatus){
 			serverStatus = true;
 			serverController.createServer();
 			handleServer.setText("Desligar");
+			logServer.appendText("Servidor iniciado "+dateFormat.format(date)+"\n");
 		}else{
 			serverStatus = false;
 			serverController.closeServer();
 			handleServer.setText("Ligar");
+			logServer.appendText("Servidor desligado "+dateFormat.format(date)+"\n");
 		}
+		
+		logServer.appendText("Ips conectados na lista: \n");
+		mapaClientes.forEach((k, v)->{
+			logServer.appendText(k.getIp());
+		});
+
 	}
 	
 	/*
