@@ -1,23 +1,30 @@
 package br.univel.jshare.view;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.rmi.RemoteException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
 
 import br.univel.jshare.MainApp;
 import br.univel.jshare.comum.Arquivo;
 import br.univel.jshare.comum.Cliente;
+import br.univel.jshare.controller.GenerateDialogController;
 import br.univel.jshare.controller.ServerController;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
-public class ViewMainController {
+public class ViewMainController implements Observer{
 
 	private MainApp mainApp;
 	@FXML
@@ -45,12 +52,28 @@ public class ViewMainController {
 	private ServerController serverController = new ServerController();
 	private DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 	
+	//Client data
+	private InetAddress address;
+	private Cliente client = new Cliente();
+	
 	public ViewMainController() {
 	}
 	
 	@FXML
 	public void initialize(){
 		disableButtons();
+		loadClientData();
+	}
+	
+	public void loadClientData(){
+		client.setId(0);
+		client.setPorta(3000);
+		client.setNome("SRVIEIRA");	
+		try {
+			client.setIp(InetAddress.getLocalHost().getHostAddress());
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -71,12 +94,12 @@ public class ViewMainController {
 	public void handleServer(){
 		
 		date = new Date();
-		mapaClientes = serverController.getMapaClientes();
-		
+
 		if(!serverStatus){
 			serverStatus = true;
-			serverController.createServer();
+			serverController.createServer(client);
 			handleServer.setText("Desligar");
+			System.out.println(client.getIp());
 			logServer.appendText("Servidor iniciado "+dateFormat.format(date)+"\n");
 		}else{
 			serverStatus = false;
@@ -84,12 +107,26 @@ public class ViewMainController {
 			handleServer.setText("Ligar");
 			logServer.appendText("Servidor desligado "+dateFormat.format(date)+"\n");
 		}
-		
-		logServer.appendText("Ips conectados na lista: \n");
-		mapaClientes.forEach((k, v)->{
-			logServer.appendText(k.getIp());
-		});
 
+	}
+	
+	/**
+	 * Method to estabilish connection with server
+	 */
+	@FXML
+	public void handleConnection(){
+
+		if(fieldIp.getText().length() >= 6 && fieldPort.getLength() == 4){
+			try {
+				serverController.registrarCliente(client);
+			} catch (RemoteException e) {
+				e.printStackTrace();
+			}
+		}else{
+			new GenerateDialogController()
+				.generateDialog(AlertType.INFORMATION, 
+						"Ip e/ou porta incorreta", "", "O ip e/ou a porta informada estao incorretos");
+		}
 	}
 	
 	/*
@@ -98,5 +135,10 @@ public class ViewMainController {
 	public void setMainApp(MainApp mainApp) {
 		this.mainApp = mainApp;
 	}
-	
+
+	@Override
+	public void update(Observable o, Object arg) {
+		
+	}
+
 }
