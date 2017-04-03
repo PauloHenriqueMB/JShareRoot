@@ -1,8 +1,8 @@
 package br.univel.jshare.controller;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.io.File;
 import java.rmi.NoSuchObjectException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -19,34 +19,30 @@ import br.univel.jshare.comum.TipoFiltro;
 
 public class ServerController implements IServer{
 
+	private Long id;
 	private IServer server;
-	private Cliente cliente;
 	private Registry registry;
-	private InetAddress address;
+	private List observer = new ArrayList<>();
+	List<Arquivo> listaArquivos = new ArrayList<>();
 	private Map<Cliente, List<Arquivo>> mapaClientes = new HashMap<>();
-
+	
 	public ServerController() {
 	}
 
-	public void createServer(){
-		cliente = new Cliente();
-		cliente.setNome("SRVIEIRA");
+	public void createServer(Cliente cliente){
 		try {
-			cliente.setPorta(3000);
-			cliente.setIp(address.getLocalHost().toString());
 			server = (IServer) UnicastRemoteObject.exportObject(this, 0);
-			registry = LocateRegistry.createRegistry(3000);
+			registry = LocateRegistry.createRegistry(cliente.getPorta());
 			registry.rebind(IServer.NOME_SERVICO, server);		
 			registrarCliente(cliente);
-		} catch (RemoteException | UnknownHostException e) {
+		} catch (RemoteException e) {
 			e.printStackTrace();
 		} 
 	}
 	
 	public void closeServer(){
 		try {
-			UnicastRemoteObject.unexportObject(this, true);
-			UnicastRemoteObject.unexportObject(registry, true);
+			UnicastRemoteObject.unexportObject(server, true);
 		} catch (NoSuchObjectException e) {
 			e.printStackTrace();
 		}
@@ -58,13 +54,42 @@ public class ServerController implements IServer{
 	
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
-		List<Arquivo> list = new ArrayList<>();
-		mapaClientes.put(c, list);
+		try {
+			registry = LocateRegistry.getRegistry(c.getIp(), c.getPorta());
+			server = (IServer) registry.lookup(IServer.NOME_SERVICO);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		} catch (NotBoundException e) {
+			e.printStackTrace();
+		}		
+		if(!verificarCliente(c)){
+			publicarListaArquivos(c, listaArquivos);
+			mapaClientes.put(c, listaArquivos);			
+		}
+		
 	}
 
+	public boolean verificarCliente(Cliente c){
+		mapaClientes.forEach((k,v)->{
+			if(k.getNome().equals(c.getNome())){
+				System.out.println("ja tem nome registrado");
+				return;
+			}
+		});
+		return false;
+	}
+	
 	@Override
 	public void publicarListaArquivos(Cliente c, List<Arquivo> lista) throws RemoteException {
-		
+		File diretorio = new File("." + File.separatorChar + "share" + File.separatorChar + "uploads");
+		for(File file: diretorio.listFiles()){
+			if(file.isFile()){
+				Arquivo arq = new Arquivo();
+				arq.setNome(file.getName());
+				arq.setTamanho(file.length());
+				lista.add(arq);
+			}
+		}
 	}
 
 	@Override
