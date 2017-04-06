@@ -13,8 +13,6 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -63,13 +61,16 @@ public class ServerController implements IServer{
 	
 	public void conectarCliente(Cliente c, String ip, int porta){
 		
+		System.out.println(c);
+		
 		try {
+	
 			registryClient = LocateRegistry.getRegistry(ip, porta);
 			serviceClient = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
-			listaArquivos = adicionarArquivos(listaArquivos);
 			serviceClient.registrarCliente(c);
-			serviceClient.publicarListaArquivos(c, listaArquivos);
-			viewMain.setUserConnected(c.getNome());
+			serviceClient.publicarListaArquivos(c, adicionarArquivos(listaArquivos));
+//			viewMain.setUserConnected(c.getNome());
+			
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (NotBoundException e) {
@@ -108,16 +109,10 @@ public class ServerController implements IServer{
 		return extensao;
 	}
 	
-	public void uparListaArquivos(Cliente cliente, List<Arquivo> listaArquivos){
-		try {
-			serviceClient.publicarListaArquivos(cliente, listaArquivos);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-	}
 
 	public List<Arquivo> adicionarArquivos(List<Arquivo> lista){
-		DateFormat formatData = new SimpleDateFormat("dd/MM/yyyy");   
+		List<Arquivo> listab = new ArrayList<>();
+//		DateFormat formatData = new SimpleDateFormat("dd/MM/yyyy");   
 		File diretorio = new File("." + File.separatorChar + "share");
 		for(File file: diretorio.listFiles()){
 			if(file.isFile()){
@@ -132,10 +127,10 @@ public class ServerController implements IServer{
 				} catch (NoSuchAlgorithmException | FileNotFoundException e) {
 					e.printStackTrace();
 				}
-				lista.add(arq);
+				listab.add(arq);
 			}
 		}	
-		return lista;
+		return listab;
 	}
 
 	public String pegarHashArquivo(File arquivo) throws NoSuchAlgorithmException, FileNotFoundException{
@@ -166,13 +161,10 @@ public class ServerController implements IServer{
 		return output;
 	}
 	
-	public Map<Cliente, List<Arquivo>> getArchives(){
-		String query = "";
-		TipoFiltro tipoFiltro = TipoFiltro.EXTENSAO;
+	public Map<Cliente, List<Arquivo>> getArchives(String arquivo, TipoFiltro tipoFiltro, String valorfiltro){
 		Map<Cliente, List<Arquivo>> newMap = new HashMap<>();
-		String filtro = "";
 		try {
-			newMap = serviceClient.procurarArquivo(query, tipoFiltro, filtro);
+			newMap = serviceClient.procurarArquivo(arquivo, tipoFiltro, valorfiltro);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
@@ -182,8 +174,10 @@ public class ServerController implements IServer{
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
 
+		List<Arquivo> list = new ArrayList<>();
+		
 		if(!verificarCliente(c)){
-			mapaClientes.put(c, listaArquivos);
+			mapaClientes.put(c, list);
 		}
 		
 	}
@@ -194,6 +188,8 @@ public class ServerController implements IServer{
 			mapaClientes.entrySet().forEach(mapa->{
 				if(mapa.getKey().equals(c)){
 					mapa.setValue(lista);
+					System.out.println(c.getNome()+" conectou");
+					System.out.println(lista);
 				}else{
 				}
 			});
@@ -204,21 +200,51 @@ public class ServerController implements IServer{
 	public Map<Cliente, List<Arquivo>> procurarArquivo(String query, TipoFiltro tipoFiltro, String filtro)
 			throws RemoteException {
 		
+		
 		Map<Cliente, List<Arquivo>> newMap = new HashMap<>();
 		
+		Cliente client = new Cliente();
+		
 		mapaClientes.forEach((k,v)->{
-			
-			Cliente client = new Cliente();
-			client.setId(0);
-			client.setIp(k.getIp());
-			client.setNome(k.getNome());
-			client.setPorta(k.getPorta());
-			
-			newMap.put(client, v);
-			
+			List<Arquivo> listFiles = new ArrayList<>();
+			v.forEach(e->{
+				if(tipoFiltro == null){
+					listFiles.add(e);
+				}else{
+					switch (tipoFiltro) {
+						case EXTENSAO:
+							break;
+						case NOME:
+							break;
+						case TAMANHO_MAX:
+							int valor = Integer.parseInt(filtro);
+							if(e.getTamanho() <= valor){
+							
+							}else{
+							
+							}
+							break;
+						case TAMANHO_MIN:
+							break;
+						default:
+							if(e.getNome().toLowerCase().contains(query.toLowerCase())){
+								listFiles.add(e);
+							}
+						break;
+					}
+				}
+			});	
+			newMap.put(k, listFiles);
 		});
 		
 		return newMap;
+	}
+	
+	public boolean verifyIfContainsName(String query, String fileName){
+		if(fileName.toLowerCase().contains(query.toLowerCase())){
+			return true;
+		}
+		return false;
 	}
 
 	@Override
