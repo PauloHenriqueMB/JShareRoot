@@ -17,18 +17,23 @@
       <Label layoutX="225.0" layoutY="14.0" text="PORT:" />
       <Button fx:id="handleCon" layoutX="358.0" layoutY="10.0" mnemonicParsing="false" onAction="#handleConnection" prefHeight="25.0" prefWidth="181.0" text="Conectar" />
       <Label layoutX="13.0" layoutY="52.0" text="Arquivo:" />
-      <TextField fx:id="fieldAssunto" layoutX="64.0" layoutY="48.0" prefHeight="25.0" prefWidth="282.0" />
-      <ComboBox fx:id="filtro" layoutX="359.0" layoutY="48.0" prefHeight="25.0" prefWidth="181.0" />
+      <TextField fx:id="fieldAssunto" layoutX="64.0" layoutY="48.0" prefHeight="25.0" prefWidth="192.0" />
+      <ComboBox fx:id="filtro" layoutX="265.0" layoutY="48.0" prefHeight="25.0" prefWidth="163.0" />
       <Button fx:id="btnBuscar" layoutX="551.0" layoutY="48.0" mnemonicParsing="false" onAction="#makeSearch" prefHeight="25.0" prefWidth="87.0" text="Buscar" />
-      <TableView fx:id="tabelaArquivos" layoutX="359.0" layoutY="86.0" prefHeight="399.0" prefWidth="377.0">
+      <TextArea fx:id="logServer" layoutX="14.0" layoutY="86.0" prefHeight="399.0" prefWidth="241.0" />
+      <Button fx:id="handleServer" layoutX="557.0" layoutY="10.0" mnemonicParsing="false" onAction="#handleServer" prefHeight="25.0" prefWidth="185.0" text="Ligar" />
+      <Button fx:id="btnLimpar" layoutX="655.0" layoutY="48.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="87.0" text="Limpar" />
+      
+      <TextField fx:id="valorFiltro" disable="true" layoutX="438.0" layoutY="48.0" prefHeight="25.0" prefWidth="104.0" />
+      <TableView fx:id="tableFiles" layoutX="265.0" layoutY="86.0" prefHeight="399.0" prefWidth="477.0">
         <columns>
-          <TableColumn prefWidth="150.0" text="Nome Arquivo" />
-            <TableColumn prefWidth="126.0" text="Autor" />
-            <TableColumn prefWidth="100.0" text="Data" />
+          <TableColumn fx:id="colAutor" prefWidth="132.0" text="Autor" />
+          <TableColumn fx:id="colArquivo" prefWidth="111.0" text="Arquivo" />
+          <TableColumn fx:id="colExtensao" minWidth="1.0" prefWidth="48.0" text="Ext." />
+          <TableColumn fx:id="colData" minWidth="1.0" prefWidth="108.0" text="Data Modificação" />
+          <TableColumn fx:id="colTamanho" minWidth="1.0" prefWidth="77.0" text="Tamanho" />
         </columns>
       </TableView>
-      <TextArea fx:id="logServer" layoutX="14.0" layoutY="86.0" prefHeight="399.0" prefWidth="332.0" />
-      <Button fx:id="handleServer" layoutX="557.0" layoutY="10.0" mnemonicParsing="false" onAction="#handleServer" prefHeight="25.0" prefWidth="185.0" text="Ligar" />
-      <Button fx:id="btnLimpar" layoutX="649.0" layoutY="48.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="87.0" text="Limpar" />
+     
    </children>
 </AnchorPane>
