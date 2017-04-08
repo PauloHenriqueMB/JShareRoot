@@ -4,10 +4,14 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import com.sun.xml.internal.bind.v2.runtime.property.Property;
 
 import br.univel.jshare.MainApp;
 import br.univel.jshare.comum.Arquivo;
@@ -16,7 +20,9 @@ import br.univel.jshare.comum.TipoFiltro;
 import br.univel.jshare.controller.GenerateDialogController;
 import br.univel.jshare.controller.ServerController;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
+import javafx.collections.ObservableSet;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
@@ -49,15 +55,13 @@ public class ViewMainController{
 	@FXML
 	private TextArea logServer;
 	@FXML
-	private TableView<Arquivo> tableFiles;
-	@FXML
 	private TableColumn<Cliente, String> colAutor = new TableColumn<>("autor");
 	@FXML
 	private TableColumn<Arquivo,String> colArquivo = new TableColumn<>("arquivo");
 	@FXML
 	private TableColumn<Arquivo, String> colExtensao = new TableColumn<>("extensao");
 	@FXML
-	private TableColumn<Arquivo, Date> colData = new TableColumn<>("data");
+	private TableColumn<Arquivo, String> colData = new TableColumn<>("data");
 	@FXML
 	private TableColumn<Arquivo, Long> colTamanho = new TableColumn<>("tamanho");
 	@FXML
@@ -69,7 +73,11 @@ public class ViewMainController{
 	private ServerController serverController = new ServerController();
 	private DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 	
-	private ObservableMap<Cliente,List<Arquivo>> mapaObserver = FXCollections.observableHashMap();
+	private Map<Cliente, List<Arquivo>> mapaArquivos = new HashMap<>();
+	private ObservableList<Map.Entry<Cliente, List<Arquivo>>> items = FXCollections.observableArrayList(mapaArquivos.entrySet());
+	
+	@FXML
+	private TableView<Map.Entry<Cliente, List<Arquivo>>> tableFiles = new TableView<>(items);
 	
 	//Client data
 	private Cliente client = new Cliente();
@@ -88,6 +96,10 @@ public class ViewMainController{
 		filtro.getItems().add(TipoFiltro.TAMANHO_MIN);
 		
 		colArquivo.setCellValueFactory(new PropertyValueFactory<>("nome"));
+		colExtensao.setCellValueFactory(new PropertyValueFactory<>("extensao"));
+		
+		colData.setCellValueFactory(new PropertyValueFactory<>("dataHoraModificacao"));
+		colTamanho.setCellValueFactory(new PropertyValueFactory<>("tamanho"));
 		
 	}
 	
@@ -171,34 +183,23 @@ public class ViewMainController{
 	
 	public void loadDataSearch(Map<Cliente, List<Arquivo>> mapa){
 		
+		items.clear();
+		
 		mapa.forEach((k,v)->{
+			List<Arquivo> listaResultado = new ArrayList<>();
 			v.forEach(e->{
 				logServer.appendText(k.getNome()+" tem o arquivo "+e.getNome()+"\n");
-				tableFiles.getColumns().get(0).setText("teste");
+				listaResultado.add(e);
 			});
+			mapaArquivos.put(k, listaResultado);
+			
 		});
-//		
-//		List<Arquivo> listaTeste = new ArrayList<>();
-//		
-//		
-//		Arquivo arquivo = new Arquivo();
-//		arquivo.setId(0);
-//		arquivo.setPath("meu path");
-//		arquivo.setNome("teste");
-//		arquivo.setMd5("meu md5");
-//		arquivo.setDataHoraModificacao(new Date());
-//		listaTeste.add(arquivo);
-//		
-//		for (Arquivo a: listaTeste) {
-//            observableList.add(a);
-//        }
-//		
-//		tableFiles.setItems(observableList);
+
+		
+		tableFiles.getColumns().addAll();
 		
 	}
 	
-	
-
 	
 	public void setUserConnected(String nome){
 		logServer.appendText(nome+" conectou e enviou/atualizou sua lista de arquivo!\n");

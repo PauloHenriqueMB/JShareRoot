@@ -13,6 +13,8 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -112,7 +114,6 @@ public class ServerController implements IServer{
 
 	public List<Arquivo> adicionarArquivos(List<Arquivo> lista){
 		List<Arquivo> listab = new ArrayList<>();
-//		DateFormat formatData = new SimpleDateFormat("dd/MM/yyyy");   
 		File diretorio = new File("." + File.separatorChar + "share");
 		for(File file: diretorio.listFiles()){
 			if(file.isFile()){
