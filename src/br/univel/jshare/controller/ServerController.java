@@ -6,6 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -13,8 +16,6 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,16 +30,11 @@ import br.univel.jshare.view.ViewMainController;
 
 public class ServerController implements IServer{
 
-	private Long id;	
-	private List observer = new ArrayList<>();
-	private List<Arquivo> listaServidor = new ArrayList<>();
 	private List<Arquivo> listaArquivos = new ArrayList<>();
 	private Map<Cliente, List<Arquivo>> mapaClientes = new HashMap<>();
 
 	private IServer serviceClient;
 	private Registry registryClient;
-
-	private ViewMainController viewMain;
 	
 	public ServerController() {
 	}
@@ -47,7 +43,6 @@ public class ServerController implements IServer{
 		
 		IServer service;
 		ServerController server = new ServerController();
-		viewMain = view;
 		
 		try {
 			
@@ -63,15 +58,29 @@ public class ServerController implements IServer{
 	
 	public void conectarCliente(Cliente c, String ip, int porta){
 		
-		System.out.println(c);
-		
 		try {
 	
 			registryClient = LocateRegistry.getRegistry(ip, porta);
 			serviceClient = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
+			
 			serviceClient.registrarCliente(c);
-			serviceClient.publicarListaArquivos(c, adicionarArquivos(listaArquivos));
-//			viewMain.setUserConnected(c.getNome());
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					while(true){
+						try {
+							serviceClient.publicarListaArquivos(c, adicionarArquivos(listaArquivos));
+						} catch (RemoteException e) {
+							e.printStackTrace();
+						}
+						try {
+							Thread.sleep(100000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}).start();
 			
 		} catch (RemoteException e) {
 			e.printStackTrace();
@@ -84,7 +93,6 @@ public class ServerController implements IServer{
 	public void desconectarCliente(Cliente c){
 		try {
 			serviceClient.desconectar(c);
-			viewMain.setUserDisconnected(c.getNome());
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} 
@@ -97,10 +105,6 @@ public class ServerController implements IServer{
 		return false;
 	}
 	
-	public Map<Cliente, List<Arquivo>> getMapaClientes() {
-		return mapaClientes;
-	}
-	
 	public String pegarExtensao(String arquivo){
 		String extensao = "";
 		int i = arquivo.lastIndexOf('.');
@@ -110,11 +114,10 @@ public class ServerController implements IServer{
 		}
 		return extensao;
 	}
-	
 
 	public List<Arquivo> adicionarArquivos(List<Arquivo> lista){
 		List<Arquivo> listab = new ArrayList<>();
-		File diretorio = new File("." + File.separatorChar + "share");
+		File diretorio = new File("." + File.separatorChar + "share" + File.separatorChar);
 		for(File file: diretorio.listFiles()){
 			if(file.isFile()){
 				Arquivo arq = new Arquivo();
@@ -174,11 +177,9 @@ public class ServerController implements IServer{
 	
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
-
-		List<Arquivo> list = new ArrayList<>();
 		
 		if(!verificarCliente(c)){
-			mapaClientes.put(c, list);
+			mapaClientes.put(c, null);
 		}
 		
 	}
@@ -189,9 +190,6 @@ public class ServerController implements IServer{
 			mapaClientes.entrySet().forEach(mapa->{
 				if(mapa.getKey().equals(c)){
 					mapa.setValue(lista);
-					System.out.println(c.getNome()+" conectou");
-					System.out.println(lista);
-				}else{
 				}
 			});
 		}
@@ -203,36 +201,33 @@ public class ServerController implements IServer{
 		
 		
 		Map<Cliente, List<Arquivo>> newMap = new HashMap<>();
-		
-		Cliente client = new Cliente();
-		
+
 		mapaClientes.forEach((k,v)->{
 			List<Arquivo> listFiles = new ArrayList<>();
 			v.forEach(e->{
-				if(tipoFiltro == null){
-					listFiles.add(e);
-				}else{
-					switch (tipoFiltro) {
-						case EXTENSAO:
-							break;
-						case NOME:
-							break;
-						case TAMANHO_MAX:
-							int valor = Integer.parseInt(filtro);
-							if(e.getTamanho() <= valor){
-							
-							}else{
-							
-							}
-							break;
-						case TAMANHO_MIN:
-							break;
-						default:
-							if(e.getNome().toLowerCase().contains(query.toLowerCase())){
-								listFiles.add(e);
-							}
-						break;
-					}
+				switch (tipoFiltro) {
+					case EXTENSAO:
+						if(e.getExtensao().toLowerCase().contains(filtro.toLowerCase())){
+							listFiles.add(e);
+						}
+					break;
+					case NOME:
+						if(e.getNome().toLowerCase().contains(query.toLowerCase())){
+							listFiles.add(e);
+						}
+					break;
+					case TAMANHO_MAX:
+						int valor = Integer.parseInt(filtro);
+						if(e.getTamanho() <= valor){
+							listFiles.add(e);
+						}
+					break;
+					case TAMANHO_MIN:
+						int valor1 = Integer.parseInt(filtro);
+						if(e.getTamanho() <= valor1){
+							listFiles.add(e);
+						}
+					break;
 				}
 			});	
 			newMap.put(k, listFiles);
@@ -250,12 +245,23 @@ public class ServerController implements IServer{
 
 	@Override
 	public byte[] baixarArquivo(Cliente cli, Arquivo arq) throws RemoteException {
-		return null;
+		
+		byte[] file;
+		Path path = Paths.get(arq.getPath());
+		try {
+			file = Files.readAllBytes(path);
+			return file;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
 	}
 	
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
-		
+		if(mapaClientes.containsKey(c)){
+			mapaClientes.remove(c);
+		}
 	}
 
 }
