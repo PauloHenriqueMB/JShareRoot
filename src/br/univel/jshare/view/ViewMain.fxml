@@ -3,11 +3,10 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.StackPane?>
 
 <AnchorPane maxHeight="500.0" maxWidth="750.0" minHeight="500.0" minWidth="750.0" prefHeight="500.0" prefWidth="750.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.univel.jshare.view.ViewMainController">
    <children>
@@ -22,18 +21,11 @@
       <Button fx:id="btnBuscar" layoutX="551.0" layoutY="48.0" mnemonicParsing="false" onAction="#makeSearch" prefHeight="25.0" prefWidth="87.0" text="Buscar" />
       <TextArea fx:id="logServer" layoutX="14.0" layoutY="86.0" prefHeight="399.0" prefWidth="241.0" />
       <Button fx:id="handleServer" layoutX="557.0" layoutY="10.0" mnemonicParsing="false" onAction="#handleServer" prefHeight="25.0" prefWidth="185.0" text="Ligar" />
-      <Button fx:id="btnLimpar" layoutX="655.0" layoutY="48.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="87.0" text="Limpar" />
+      <Button fx:id="btnLimpar" layoutX="655.0" layoutY="48.0" mnemonicParsing="false" onAction="#limparBusca" prefHeight="25.0" prefWidth="87.0" text="Limpar" />
       
       <TextField fx:id="valorFiltro" disable="true" layoutX="438.0" layoutY="48.0" prefHeight="25.0" prefWidth="104.0" />
-      <TableView fx:id="tableFiles" layoutX="265.0" layoutY="86.0" prefHeight="399.0" prefWidth="477.0">
-        <columns>
-          <TableColumn fx:id="colAutor" prefWidth="132.0" text="Autor" />
-          <TableColumn fx:id="colArquivo" prefWidth="111.0" text="Arquivo" />
-          <TableColumn fx:id="colExtensao" minWidth="1.0" prefWidth="48.0" text="Ext." />
-          <TableColumn fx:id="colData" minWidth="1.0" prefWidth="108.0" text="Data Modificação" />
-          <TableColumn fx:id="colTamanho" minWidth="1.0" prefWidth="77.0" text="Tamanho" />
-        </columns>
-      </TableView>
+      <StackPane fx:id="painel" layoutX="265.0" layoutY="86.0" prefHeight="354.0" prefWidth="475.0" style="-fx-background-color: #ffffff;" />
+      <Button fx:id="realizarDownload" layoutX="265.0" layoutY="449.0" mnemonicParsing="false" onAction="#realizarDownload" prefHeight="36.0" prefWidth="475.0" text="Realizar Download" />
      
    </children>
 </AnchorPane>
