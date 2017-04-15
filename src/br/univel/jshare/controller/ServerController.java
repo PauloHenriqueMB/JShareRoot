@@ -1,11 +1,8 @@
 package br.univel.jshare.controller;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,7 +11,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -26,43 +22,38 @@ import br.univel.jshare.comum.Arquivo;
 import br.univel.jshare.comum.Cliente;
 import br.univel.jshare.comum.IServer;
 import br.univel.jshare.comum.TipoFiltro;
+import br.univel.jshare.observable.Observador;
+import br.univel.jshare.util.Md5Util;
 import br.univel.jshare.view.ViewMainController;
 
 public class ServerController implements IServer{
 
+	private List<Observador> observadores = new ArrayList<>();
 	private List<Arquivo> listaArquivos = new ArrayList<>();
 	private Map<Cliente, List<Arquivo>> mapaClientes = new HashMap<>();
 
 	private IServer serviceClient;
 	private Registry registryClient;
+	private ViewMainController view;
 	
-	public ServerController() {
-	}
+	public ServerController() {}
 
-	public void createServer(Cliente cliente, ViewMainController view){
-		
+	public void createServer(Cliente cliente){
 		IServer service;
 		ServerController server = new ServerController();
-		
 		try {
-			
 			service = (IServer) UnicastRemoteObject.exportObject(server, 0);
 			Registry registry = LocateRegistry.createRegistry(cliente.getPorta());
 			registry.rebind(IServer.NOME_SERVICO, service);		
-
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} 
-		
 	}
 	
-	public void conectarCliente(Cliente c, String ip, int porta){
-		
+	public void conectarCliente(Cliente c, String ip, int porta, Observador observador){
 		try {
-	
 			registryClient = LocateRegistry.getRegistry(ip, porta);
 			serviceClient = (IServer) registryClient.lookup(IServer.NOME_SERVICO);
-			
 			serviceClient.registrarCliente(c);
 			new Thread(new Runnable() {
 				@Override
@@ -81,18 +72,17 @@ public class ServerController implements IServer{
 					}
 				}
 			}).start();
-			
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (NotBoundException e) {
 			e.printStackTrace();
 		}
-		
 	}
 	
 	public void desconectarCliente(Cliente c){
 		try {
 			serviceClient.desconectar(c);
+			
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} 
@@ -126,43 +116,11 @@ public class ServerController implements IServer{
 				arq.setPath(file.getPath());
 				arq.setDataHoraModificacao(new Date(file.lastModified()));
 				arq.setExtensao(pegarExtensao(arq.getNome()));
-				try {
-					arq.setMd5(pegarHashArquivo(file));
-				} catch (NoSuchAlgorithmException | FileNotFoundException e) {
-					e.printStackTrace();
-				}
+				arq.setMd5(Md5Util.getMD5Checksum(file.getAbsolutePath()));
 				listab.add(arq);
 			}
 		}	
 		return listab;
-	}
-
-	public String pegarHashArquivo(File arquivo) throws NoSuchAlgorithmException, FileNotFoundException{
-		MessageDigest digest = MessageDigest.getInstance("MD5");
-		InputStream input = new FileInputStream(arquivo);
-		byte[] buffer = new byte[8192];
-		int read = 0;
-		String output = null;
-		try {
-			while( (read = input.read(buffer)) > 0) {
-				digest.update(buffer, 0, read);
-			}		
-			byte[] md5sum = digest.digest();
-			BigInteger bigInt = new BigInteger(1, md5sum);
-			output = bigInt.toString(16);
-		}
-		catch(IOException e) {
-			throw new RuntimeException("Não foi possivel processar o arquivo.", e);
-		}
-		finally {
-			try {
-				input.close();
-			}
-			catch(IOException e) {
-				throw new RuntimeException("Não foi possivel fechar o arquivo", e);
-			}
-		}	
-		return output;
 	}
 	
 	public Map<Cliente, List<Arquivo>> getArchives(String arquivo, TipoFiltro tipoFiltro, String valorfiltro){
@@ -174,14 +132,26 @@ public class ServerController implements IServer{
 		}
 		return newMap;
 	}
-	
+
+    public void adicionarObservador(final Observador observador) {
+        this.observadores.add(observador);
+    }
+
+    public void notificarObservadores(final String text) {
+    	observadores.forEach(observador -> observador.updateLog(text));
+    }
+
+    
+	/**
+	 * Metodos do servidor abaixo
+	 */
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
-		
+		List<Arquivo> lista = new ArrayList<Arquivo>();
 		if(!verificarCliente(c)){
-			mapaClientes.put(c, null);
+			mapaClientes.put(c, lista);
+			notificarObservadores("Cliente " + c.getNome() + " registrou-se no servidor!");
 		}
-		
 	}
 	
 	@Override
@@ -198,10 +168,7 @@ public class ServerController implements IServer{
 	@Override
 	public Map<Cliente, List<Arquivo>> procurarArquivo(String query, TipoFiltro tipoFiltro, String filtro)
 			throws RemoteException {
-		
-		
 		Map<Cliente, List<Arquivo>> newMap = new HashMap<>();
-
 		mapaClientes.forEach((k,v)->{
 			List<Arquivo> listFiles = new ArrayList<>();
 			v.forEach(e->{
@@ -224,7 +191,7 @@ public class ServerController implements IServer{
 					break;
 					case TAMANHO_MIN:
 						int valor1 = Integer.parseInt(filtro);
-						if(e.getTamanho() <= valor1){
+						if(e.getTamanho() >= valor1){
 							listFiles.add(e);
 						}
 					break;
@@ -232,7 +199,6 @@ public class ServerController implements IServer{
 			});	
 			newMap.put(k, listFiles);
 		});
-		
 		return newMap;
 	}
 	
@@ -245,16 +211,15 @@ public class ServerController implements IServer{
 
 	@Override
 	public byte[] baixarArquivo(Cliente cli, Arquivo arq) throws RemoteException {
-		
 		byte[] file;
 		Path path = Paths.get(arq.getPath());
 		try {
 			file = Files.readAllBytes(path);
+			System.out.println(cli.getNome() + " baixou o arquivo " + arq.getNome());
 			return file;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		
 	}
 	
 	@Override
@@ -263,5 +228,5 @@ public class ServerController implements IServer{
 			mapaClientes.remove(c);
 		}
 	}
-
+	
 }

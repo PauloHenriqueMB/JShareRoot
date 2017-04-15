@@ -21,9 +21,6 @@ public class MainApp extends Application {
 	private Stage primaryStage;
 	private BorderPane rootLayout;
 	
-	/**
-	 * Start application
-	 */
 	@Override
 	public void start(Stage primaryStage) {
 		this.primaryStage = primaryStage;
@@ -32,9 +29,6 @@ public class MainApp extends Application {
 		loadViewMain();
 	}
 	
-	/**
-	 * Load rootLayout
-	 */
 	public void initRootLayout(){
 		try{
 			FXMLLoader loader = new FXMLLoader();
@@ -49,9 +43,6 @@ public class MainApp extends Application {
 		}
 	}
 	
-	/**
-	 * Load view main
-	 */
 	public void loadViewMain(){
 		try{
 			FXMLLoader loader = new FXMLLoader();
@@ -64,15 +55,6 @@ public class MainApp extends Application {
 			e.printStackTrace();
 		}
 	}
-
-	/**
-	 * Return main stage
-	 * @return
-	 */
-	public Stage getPrimaryStage() {
-		return primaryStage;
-	}
-	
 	
 	public static void main(String[] args) {
 		launch(args);
